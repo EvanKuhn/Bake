@@ -7,13 +7,14 @@
 module Bake
 
   class Utils
-    # Print a file
-    def self.print_file(filename, indent='')
+    # Return the contents of a file
+    def self.read_file(filename, indent='')
       File.open(filename) do |file|
+        contents = ''
         while(line = file.gets)
-          print indent
-          puts line
+          contents += indent + line
         end
+        return contents
       end
     end
     
@@ -32,7 +33,10 @@ module Bake
         if(recurse && File.directory?(filename))
           get_source_files_impl(File.path(filename), recurse, output)
         elsif(File.extname(filename) =~ /^\.(c|cc|cpp|cxx|c++)$/)
-          output << (dir + '/' + filename)
+          # Construct the relative file path without the preceding "./"
+          file_path = dir + '/' + filename
+          file_path.sub!(/^\.\//, '')
+          output << file_path
         end
       end
     end

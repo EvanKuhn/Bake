@@ -6,6 +6,9 @@
 module Bake
 
   # Directory containing temporary files
-  TEMP_OUTPUT_DIR = './.bake-temp/'
+  BAKE_DIR = '.bake/'
+
+  # Files
+  COMPILER_OUTPUT_FILENAME = 'compiler-output'
 
 end # module Bake

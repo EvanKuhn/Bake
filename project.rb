@@ -1,7 +1,7 @@
 #===============================================================================
 # Project and ProjectType classes. A project contains all the settings for a
 # single application or library. The class's fields mirror the format of a
-# project specification in a .bake file.
+# project specification in a bake.proj file.
 #
 # Evan Kuhn, 2012-02-02
 #===============================================================================
@@ -85,7 +85,7 @@ module Bake
     end
     
     # Convert the project to a string. The output string will match the format
-    # that is expected in a .bake file.
+    # that is expected in a bake.proj file.
     def to_s
       # First check that we have all necessary fields
       raise 'Missing project name'  if(name.nil?  || name.empty?)
