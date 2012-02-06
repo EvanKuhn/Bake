@@ -13,6 +13,21 @@ File extensions:
 - Source: .c .cc .cpp .cxx .c++
 
 
+
+Bake: A Better C++ Build Utility
+
+Output File Name: whatever
+Output File Type: app
+Compiling project 'whatever':
+
+  bar.cpp
+  blah.cpp
+  foo.cpp  
+
+Success!
+
+
+
 Bake: A Better C++ Build Utility
 
   Bake is a utility for maintaining and building systems of C++ projects, very
