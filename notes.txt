@@ -1,0 +1,238 @@
+================================================================================
+Bake Notes
+================================================================================
+Pieces:
+
+1) A method for analyzing cpp files and determining build dependencies.
+
+2) Analyzing .bake files and determining project dependencies and other settings
+
+
+File extensions:
+- Header: .h .hh .hpp
+- Source: .c .cc .cpp .cxx .c++
+
+
+Bake: A Better C++ Build Utility
+
+  Bake is a utility for maintaining and building systems of C++ projects, very
+  similar to Make. It scales easily from a single application to a large set of
+  libraries and executables. Bake provides two usage types:
+
+  1) Easy mode
+
+     Build all of the C++ files in the current directory. Output an application,
+     static library, or shared library. Also allow the user to name the output
+     file.
+
+     USAGE> bake --easy [app|lib|dll] [filename]
+
+  2) Normal mode
+
+     This requires that a .bake file exist in the current directory. Bake will
+     read the configuration info in the .bake file and build the project(s) 
+     specified by the user.
+
+     USAGE> bake [project|system] [name]
+
+Options:
+  ...
+
+================================================================================
+Use cases
+================================================================================
+Bake: A Better C++ Build Utility
+
+  Bake is a utility for maintaining and building systems of C++ projects, very
+  similar to Make. It scales easily from a single application to a large set of
+  libraries and executables. Bake provides two usage types:
+
+  1) Easy mode
+
+     If there is no .bake file in the current directory, use easy mode to build
+     all of the C++ files in the current directory. You may optionally specify
+     the build type (app, lib, dll) and output name.
+
+     USAGE> bake easy [app|lib|dll] [<name>]
+
+  2) Normal mode
+
+     This requires that a .bake file exist in the current directory. Bake will
+     read the configuration info in the .bake file and build the project(s) 
+     specified by the user.
+
+     USAGE> bake <project|system> <name>
+
+Options:
+    -v, --verbose                    Verbose output
+    -h, --help                       Display this screen
+
+
+
+----------------
+
+
+Bake: A Better C++ Build Utility
+
+  ABOUT
+    Bake is a utility for maintaining and building systems of C++ projects, very
+    similar to Make. It scales easily from a single application to a large set 
+    of libraries and executables.
+
+  USAGE
+    bake <command> [<args>]
+
+  COMMANDS
+    build    Build projects defined in the .bake file in the current dir
+    easy     Build all C++ files in the current directory
+    init     Create a .bake file for the files in the current dir
+
+  OPTIONS
+    -v, --verbose    Enable verbose output
+    -h, --help       Display this screen, or help for the given command
+
+
+
+Bake: A Better C++ Build Utility
+
+  ABOUT
+    The 'build' command parses the .bake file in the current directory and 
+    builds the project or system named by the user.
+
+  USAGE
+    bake build <project|system> <name>
+
+
+
+Bake: A Better C++ Build Utility
+
+  ABOUT
+    The 'easy' command tells Bake to build all source files in the current dir,
+    even if no .bake file exists. If such a file does exist, it will be ignored.
+
+  USAGE
+    bake easy [app|lib|dll] [name]
+
+
+
+Bake: A Better C++ Build Utility
+
+  ABOUT
+    The 'init' command writes a preliminary .bake file including all source 
+    files in the current directory.
+
+  USAGE
+    bake init
+
+
+----------------
+
+
+The 'build' command parses the .bake file in the current directory and builds
+the project or system named by the user.
+
+USAGE: bake build <type> <name>
+
+PARAMS
+  type   The type of configuration to build: project, system.
+  name   The name of the project or system to build.
+
+
+
+The 'easy' tells Bake to build the C++ files in the current directory, even if
+no .bake file exists. If a .bake file does exist, it will be ignored.
+
+USAGE: bake easy [type] [name]
+
+PARAMS
+  type   The type of executable to build: app, lib, dll. Uses app by default.
+  name   The name of the output file. Bake may add a suffix based on the type.
+
+
+
+================================================================================
+Sample files
+================================================================================
+
+# Define a project named 'Proj1'
+project Proj1 {
+  # The project type determines what kind of file will be created, as well as 
+  # its name. Given a project named 'foo', we can build one of three file types:
+  # 1) An application named foo
+  # 2) A static library named foo.a
+  # 3) A shared library named foo.so
+  type = app | lib | dll  
+
+  # All files in this project that should be compiled
+  files {
+    foo.cpp
+    bar.cpp
+    blah.cpp
+  }
+
+  # All the other projects that this project depends on
+  deps {
+    Proj2
+    Proj3
+  }
+
+  # A list of third-party libraries used by this project
+  libs {
+    sqlite.so
+    libjson.a
+  }
+
+  # Paths to search for included files
+  include-paths {
+    
+  }
+
+  # Paths to search for third-party library files
+  lib-paths {
+
+  }
+}
+
+
+
+
+# A system defines a set of projects to build. Here we define a system named
+# SomeComplexSystem.
+system SomeComplexSystem {
+  # Here we list the projects in the system. Each project can optionally include
+  # the location (to the right of the equals sign). If no location is given,
+  # bake will look in the subdirectory named after the project.
+  projects {
+    Proj1 [ = ./Proj1]
+    Proj2 [ = ./Proj2]
+    Proj3 [ = ./Proj3]
+  }
+}
+
+
+================================================================================
+Directory structure:
+================================================================================
+
+SystemDir/
+  .bake
+  Proj1/
+    .bakeproj
+    foo.h
+    bar.h
+    bar.cpp
+  Proj2/
+    .bakeproj
+    cat.h
+    dog.cpp
+  ...
+
+You can see we have the .bakesys (system-level) and .bakeproj (project-level)
+bake files.
+
+Do we even need .bakesys vs .bakeproj?  What if we just merge all bake files
+together as we parse?
+
+
+
+

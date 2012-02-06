@@ -1,0 +1,14 @@
+Bake: A Better Make
+
+Bake is a C++ build system, similar to Make. It aims to ease configuration of 
+C++ projects, and thus ease C++ development without the need for an Integrated
+Development Environment.
+
+Bake includes:
+
+- A simpler configuration file format
+- Support for multiple projects
+- Automatic build dependency generation
+
+-- Evan Kuhn, 2012-01-30
+
