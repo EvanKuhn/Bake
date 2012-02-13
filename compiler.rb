@@ -13,80 +13,123 @@ module Bake
   
   class Compiler
     attr_accessor :verbose
-    
+
     # Build (compile) a project
     def build(project)
-      puts "Compiling project '#{project.name}':"
-      puts
+      begin
+        puts "Compiling project '#{project.name}':"
+        puts
 
-      # Temp data
-      obj_files = []
+        # Make sure the temp output dir exists
+        Dir.mkdir(BAKE_DIR) if(!Dir.exists? BAKE_DIR)
+        
+        # Compile each file
+        compile_source_files(project)
+        
+        # Then link
+        print "  (linking)\n\n"
+        
+        case project.type
+        when ProjectType::APP
+          link_app(project)
+        when ProjectType::LIB
+          link_lib(project)
+        when ProjectType::DLL
+          link_dll(project)
+        end
+
+        # Done
+        puts 'Success!'
+      rescue => e
+        print e.message
+      end
+    end
+  
+    # Compile all source files within a project
+    # - Will populate the instance variables @obj_files
+    def compile_source_files(project)
+      @obj_files = []
       num_errors = 0
       error_str = ''
-      
-      # Make sure the temp output dir exists
-      Dir.mkdir(BAKE_DIR) if(!Dir.exists? BAKE_DIR)
-      compiler_output_file = BAKE_DIR  + COMPILER_OUTPUT_FILENAME
-      
-      # Compile each file
+
+      # Compile files
       project.files.each do |src_file|
         # Get the object filename 
         obj_file = BAKE_DIR + src_file.sub(/\.[\w+]+$/, ".o")
-        obj_files << obj_file
+        @obj_files << obj_file
         
         # Run the command and save output in a temp file
         print "  #{src_file}"
         command = "g++ -c #{src_file} -o #{obj_file}"
-        system(command + ' &> ' + compiler_output_file)
-
+        system(command + ' &> ' + COMPILER_OUTPUT_FILE)
+        
         # If the command failed, record the errors
         if !$?.success?
           print " (failed)"
           num_errors += 1
-          error_str += Utils.read_file(compiler_output_file, '  ')
+          error_str += Utils.read_file(COMPILER_OUTPUT_FILE, '  ')
         end
         print "\n"
       end
-      
-      # If there were compiler errors, print them and quit
-      if num_errors > 0
-        print "\nCompiler errors:\n\n#{error_str}\n"
-        return
-      end
-      
-      # There were no errors, so link
-      if num_errors == 0
-        print "  (linking)\n\n"
 
-        case project.type
-        when ProjectType::APP
-          # Run the linker command
-          command = "g++ -o #{project.name} " + obj_files.join(' ')
-          system(command + ' &> ' + compiler_output_file)
+      # Raise errors if we encountered any
+      raise "\nCompiler errors:\n\n#{error_str}\n" if num_errors > 0
+    end
 
-          # If the command failed, record the errors
-          if !$?.success?
-            num_errors += 1
-            error_str = Utils.read_file(compiler_output_file, '  ')
-          end
-        when ProjectType::LIB
-          #TODO
-          puts "*** I don't know how to create static libraries yet! ***"
-          return
-        when ProjectType::DLL
-          #TODO
-          puts "*** I don't know how to create dynamic libraries yet! ***"
-          return
-        end
-      end
-      
-      # Print success or failure
-      if num_errors == 0
-        puts 'Success!'
-      else
-        print "Linker errors:\n\n#{error_str}\n"
+    # Link object files into an application
+    def link_app(project)
+      begin
+        # Check for object files
+        raise "  No object files found" if @obj_files.empty?
+        
+        # Run the linker command
+        command = "g++ -o #{project.name} " + @obj_files.join(' ')
+        system(command + ' &> ' + COMPILER_OUTPUT_FILE)
+        
+        # If the command failed, raise the errors
+        raise Utils.read_file(COMPILER_OUTPUT_FILE, '  ') if !$?.success?
+      rescue => e
+        raise raise "Linker Errors:\n\n#{e.message}\n"
       end
     end
-  end
+
+    # Link object files into a static library
+    def link_lib(project)
+      begin
+        # Check for object files
+        raise "  No object files found" if @obj_files.empty?
+        
+        # Run the linker command
+        command = "ar -cvq lib#{project.name}.a " + @obj_files.join(' ')
+        system(command + ' &> ' + COMPILER_OUTPUT_FILE)
+        
+        # If the command failed, raise the errors
+        raise Utils.read_file(COMPILER_OUTPUT_FILE, '  ') if !$?.success?
+      rescue => e
+        raise raise "Linker Errors:\n\n#{e.message}\n"
+      end
+    end
+
+    # Link object files into a shared library
+    def link_dll(project)
+      begin
+        # Check for object files
+        raise "  No object files found" if @obj_files.empty?
+        
+        # Run the linker command
+        command = "g++ -shared -o lib#{project.name}.so " + @obj_files.join(' ')
+        system(command + ' &> ' + COMPILER_OUTPUT_FILE)
+        
+        # If the command failed, raise the errors
+        raise Utils.read_file(COMPILER_OUTPUT_FILE, '  ') if !$?.success?
+      rescue => e
+        raise raise "Linker Errors:\n\n#{e.message}\n"
+      end
+    end
+    
+    # Output file used for temporary compiler/linker output
+    COMPILER_OUTPUT_FILE = BAKE_DIR + COMPILER_OUTPUT_FILENAME
+    
+  end # class Compiler
 
 end # module Bake

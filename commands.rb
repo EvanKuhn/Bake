@@ -75,7 +75,7 @@ module Bake
     def run
       # Get and check params
       raise "Missing <project|system> param. See 'bake help build'." if(ARGV.length < 2)
-      raise "Missing <name> param. See 'bake help build'."           if(ARGV.length < 3) 
+      raise "Missing <name> param. See 'bake help build'."           if(ARGV.length < 3)
 
       type = ARGV[1].downcase
       name = ARGV[2]

@@ -13,6 +13,13 @@ File extensions:
 - Source: .c .cc .cpp .cxx .c++
 
 
+How to link against a static library
+- See tests/libtest/mainprog
+- Given libfoobar.a, we can do either:
+  - g++ -o main main.cpp -lfoobar -L../     (use -l option, plus -L for path)
+  - g++ -o main main.cpp ../libfoobar.a     (list path to lib)
+
+
 
 Bake: A Better C++ Build Utility
 
