@@ -1,108 +1,179 @@
-#===============================================================================
-# Command-line options parser for the Bake utility
-#
-# Evan Kuhn, 2012-02-02
-#===============================================================================
-require 'optparse'
-require 'project'
 
-class CmdLine
+
+#cmdline.option("h,help")
+#cmdline.option("f,file", 1)
+#cmdline.option()
+
+#cmdline.parse(ARGV)
+
+#cmdline.has('h')
+#value = cmdline.get('f')
+
+
+
+
+class CommandLine
   def initialize
-    # This hash will hold all options parsed from the command line
-    @options = {}
-
-    # Create the parser object
-    @optparse = OptionParser.new do |opts|
-      
-      # Set a banner, displayed at the top of the help screen.
-      opts.banner = <<eos
-  Bake is a utility for maintaining and building systems of C++ projects, very
-  similar to Make. It scales easily from a single application to a large set of
-  libraries and executables. Bake provides two usage types:
-
-  1) Easy mode
-
-     Build all of the C++ files in the current directory. Output an application,
-     static library, or shared library. Also allow the user to name the project,
-     which determines the output filename.
-
-     USAGE> bake --easy [app|lib|dll] [name]
-
-  2) Normal mode
-
-     This requires that a .bake file exist in the current directory. Bake will
-     read the configuration info in the .bake file and build the project(s) 
-     specified by the user.
-
-     USAGE> bake <project|system> <name>
-eos
-      
-      opts.separator ''
-      opts.separator 'Options:'
-      
-      # Parse --easy option
-      @options[:easy] = false
-      @options[:type] = ProjectType::APP
-      opts.on( '-e', '--easy', \
-               'Compile all C++ files in the current dir.', \
-               'Optionally takes args: [type] [name]') \
-      do
-        @options[:easy] = true
-        @options[:type] = ARGV[0] if(ARGV.size > 0)
-        @options[:name] = ARGV[1] if(ARGV.size > 1)
-
-        # Make sure the project type is valid
-        if(!ProjectType.valid? @options[:type])
-          raise "Bad [type] given for --easy option"
-        end
-        
-        # If no name is given, use the type string
-        @options[:name] = @options[:type] if(@options[:name].nil?)
-      end
-
-      # Parse --verbose option
-      opts.on('-v', '--verbose', 'Verbose output') do
-        @options[:verbose] = true
-      end
-      
-      # Parse --help option
-      opts.on('-h', '--help', 'Display this screen') do
-        puts opts
-        exit
-      end
-
-      opts.separator ''
+    @index = 0
+    @option_index_map = {}  # Map from option name to index
+    @option_keys = []       # Array of option name per index
+    @option_nvals = []      # Num expected values to be given with option
+    @option_given = []      # Flags indicating if the option was specified
+    @option_vals = []       # Actual values given with option
+    @params = []            # Non-option args
+  end
+  
+  # Add an option to parse.
+  # Params:
+  #   1) The option character and/or name. Eg: "h,help", "h", or "help",
+  #      depending on which ones you want to accept.
+  #   2) The number of values expected to be passed after the option.
+  #
+  # Notes:
+  # - Options must start with an alphanumeric character.
+  # - Subsequent characters can include '-' or '_'
+  def option(key, num_values=0)   
+    if(key =~ /^[a-zA-Z0-9]$/)
+      raise "Option '#{key}' already specified" if @option_index_map.has_key? key
+      @option_index_map[key] = @index
+      @option_keys[@index] = key
+      @option_nvals[@index] = num_values
+      @option_given[@index] = false
+      @index += 1
+    elsif(key =~ /^[a-zA-Z][\w\-]+$/)
+      raise "Option '#{key}' already specified" if @option_index_map.has_key? key
+      @option_index_map[key] = @index
+      @option_keys[@index] = key
+      @option_nvals[@index] = num_values
+      @option_given[@index] = false
+      @index += 1
+    elsif(key =~ /^([a-zA-Z0-9]),([a-zA-Z][\w\-]+)$/)
+      raise "Option '#{$1}' already specified" if @option_index_map.has_key? $1
+      raise "Option '#{$2}' already specified" if @option_index_map.has_key? $2
+      @option_index_map[$1] = @index
+      @option_index_map[$2] = @index
+      @option_keys[@index] = $1
+      @option_nvals[@index] = num_values
+      @option_given[@index] = false
+      @index += 1
+    else
+      raise "Invalid option specification '#{key}'"
     end
   end
 
-  # Parse the command line args, removing all options from ARGV
-  def parse
-    @optparse.parse!
+  # Will this object accept the given option string?
+  def accepts?(option)
+    return @option_index_map.has_key? option
   end
 
-  # Was easy mode specified?
-  def easy?
-    return @options[:easy]
+  # Parse the command line args
+  def parse(args)
+    args.each do |arg|
+      if arg.start_with? '--'
+        puts "long option '#{arg}'"
+        
+        # Argument is a long option (--foobar)
+        arg = arg[2,arg.length]
+        raise "Option '--#{arg}' not accepted" if !accepts? arg
+
+        # Remember that the option was specified
+        index = @option_index_map[arg]
+        @option_given[index] = true
+        
+        # TODO - check for and save the option's values
+        # @option_vals[index]
+        
+      elsif arg.start_with? '-'
+        # Argument is a short option (-a, -abc)
+        arg = arg[1,arg.length]
+
+        # Make sure each character is accepted
+        arg.chars.each_with_index do |c,i|
+          puts "short option '#{c}'"
+          
+          # Check for errors
+          raise "Option '-#{c}' not accepted" if !accepts? c
+          index = @option_index_map[c]
+          nvals = @option_nvals[index]
+
+          if nvals > 0 && i < arg.size-1
+            raise "Option '-#{c}' must be followed by #{nvals} values" 
+          end
+          
+          # Remember that the option was specified
+          index = @option_index_map[c]
+          @option_given[index] = true
+
+          # TODO - check for and save the option's values
+          # @option_vals[index]
+        end
+
+      else
+        # Argument is a param (ie. not an option)
+        @params << arg
+      end
+    end
   end
 
-  # Get the project type (for easy mode)
-  def type
-    return @options[:type]
+  # Check if the option has been specified at the command line
+  def has?(arg)
+    return false if !@param_index_map.has_key? arg
+    index = @param_index_map[arg]
+    return @option_given[index]
   end
 
-  # Get the project name (for easy mode)
-  def name
-    return @options[:name]
+  # Get the value for the given arg
+  # - Raises an error if the option hasn't been specified
+  # - Returns nil if no values are expected 
+  # - Returns a single value if only one is expected
+  # - Returns an array of values if multiple values are expected
+  def value(arg)
+    raise "Option '#{arg}' not accepted" if !accepts? arg
+    raise "Option '#{arg}' not specified" if !has? arg
+    index = @param_index_map[arg]
+    case @param_nvals[index]
+    when 0
+      return nil
+    when 1
+      return @param_vals[index][0]
+    else
+      return @param_vals[index]
+    end
   end
 
-  # Get the output filename (for easy mode). If none given, build one from the
-  # project name and type
-  def outfile
-    return name + ProjectType::filename_suffix(type)
+  # Get the remaining values in ARGV that were not options (ie. did not start
+  # with a hyphen).
+  def params
+    return @params
   end
+
+  # Get all the options given.
+  # - Returns an array of option strings.
+  # - Call value() to get the corresponding values.
+  def options
+    ops = []
+    @option_keys.each_with_index do |op,i|
+      ops << op if @option_given[i]
+    end
+    return ops
+  end
+end
+
+
+
+
+begin
+  cmdline = CommandLine.new
+  cmdline.option("h,help")
+  cmdline.option("verbose")
+  cmdline.option("f", 1)
+  cmdline.option('2', 2)
+  cmdline.option('what-you-want', 1)
   
-  # Is verbose mode enabled?
-  def verbose?
-    return @options[:verbose]
-  end
+  cmdline.parse(ARGV)
+  
+  puts "Params: " + cmdline.params.join(', ')
+  puts "Options: " + cmdline.options.join(', ')
+rescue => e
+  puts "ERROR: " + e.message
 end
