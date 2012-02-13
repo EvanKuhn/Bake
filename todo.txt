@@ -2,8 +2,8 @@
 TODO
 ================================================================================
 [DONE] - bake easy app
-[    ] - bake easy lib
-[    ] - bake easy dll
+[DONE] - bake easy lib
+[DONE] - bake easy dll
 [    ] - Support -h and --help
 [    ] - 
 [    ] - 
