@@ -54,13 +54,19 @@ module Bake
 
       # Compile files
       project.files.each do |src_file|
+        print "  #{src_file}"
+
         # Get the object filename 
         obj_file = BAKE_DIR + src_file.sub(/\.[\w+]+$/, ".o")
         @obj_files << obj_file
-        
-        # Run the command and save output in a temp file
-        print "  #{src_file}"
+
+        # Build the compile command
         command = "g++ -c #{src_file} -o #{obj_file}"
+        if !project.inc_paths.empty?
+          command += ' -I' + project.inc_paths.join(' -I')
+        end
+
+        # Run the command and save output in a temp file
         system(command + ' &> ' + COMPILER_OUTPUT_FILE)
         
         # If the command failed, record the errors
@@ -81,9 +87,17 @@ module Bake
       begin
         # Check for object files
         raise "  No object files found" if @obj_files.empty?
+
+        # Build the linker command
+        command = "g++ -o #{project.name} " + @obj_files.join(' ')
+        if !project.lib_paths.empty?
+          command += ' -L' + project.lib_paths.join(' -L')
+        end
+        if !project.libs.empty?
+          command += ' -l' + project.libs.join(' -l')
+        end
         
         # Run the linker command
-        command = "g++ -o #{project.name} " + @obj_files.join(' ')
         system(command + ' &> ' + COMPILER_OUTPUT_FILE)
         
         # If the command failed, raise the errors

@@ -75,12 +75,14 @@ module Bake
     attr_accessor :name, :type, :files, :deps, :libs, :inc_paths, :lib_paths
 
     # Initializer
-    def initialize
+    # - Takes an optional string representation, on which it will call from_s()
+    def initialize(str=nil)
       @files = []
       @deps = []
       @libs = []
       @inc_paths = []
       @lib_paths = []
+      from_s str if !str.nil?
     end
     
     # Get the project's output filename
@@ -117,7 +119,8 @@ module Bake
       deps.each { |x| str += "    #{x}\n" } if(!deps.nil?)
       str += "  }\n"
       str += "\n"
-      str += "  # A list of third-party libraries used by this project\n"
+      str += "  # A list of third-party libraries used by this project.\n"
+      str += "  # For a library file named 'libfoo.a' or 'libfoo.so', just write 'foo'.\n"
       str += "  libs {\n"
       libs.each { |x| str += "    #{x}\n" } if(!libs.nil?)
       str += "  }\n"

@@ -63,34 +63,23 @@ module Bake
       s  = "\n"
       s += "  ABOUT\n"
       s += "    The 'build' command parses the bake.proj file in the current directory and\n"
-      s += "    builds the project or system named by the user.\n"
+      s += "    builds the project defined in that file.\n"
       s += "\n"
       s += "  USAGE\n"
-      s += "    bake build <project|system> <name>\n"
+      s += "    bake build\n"
       s += "\n"
       return s
     end
     
     # Run the command
     def run
-      # Get and check params
-      raise "Missing <project|system> param. See 'bake help build'." if(ARGV.length < 2)
-      raise "Missing <name> param. See 'bake help build'."           if(ARGV.length < 3)
-
-      type = ARGV[1].downcase
-      name = ARGV[2]
-
-      if(type != 'project' && type != 'system')
-        raise "Invalid <project|system> value. See 'bake help build'."
-      end
-
       # Parse the bake.proj file
+      raise "No bake.proj file found" if !File.exists? 'bake.proj'
+      project = Project.new Utils::read_file 'bake.proj'
 
-      # Build the project or system
-      
-      puts "Building #{type} '#{name}'"
-      puts "*** Not yet implemented! ***"
-      # TODO
+      # Build the project
+      comp = Compiler.new
+      comp.build(project)
     end
   end
 
