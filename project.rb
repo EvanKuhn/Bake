@@ -74,16 +74,20 @@ module Bake
   class Project
     attr_accessor :name, :type, :files, :deps, :libs, :inc_paths, :lib_paths
 
+    # Initializer
+    def initialize
+      @files = []
+      @deps = []
+      @libs = []
+      @inc_paths = []
+      @lib_paths = []
+    end
+    
     # Get the project's output filename
     def outfile
       return name + ProjectType::filename_suffix(type)
     end
-    
-    # Parse a project definition from a string
-    def from_s
-      raise 'Project::from_s() not implemented!'
-    end
-    
+
     # Convert the project to a string. The output string will match the format
     # that is expected in a bake.proj file.
     def to_s
@@ -99,8 +103,8 @@ module Bake
       str += "  # The project type determines what kind of file will be created, as well as\n"
       str += "  # its name. Given a project named 'foo', we can build one of three file types:\n"
       str += "  # 1) An application named foo\n"
-      str += "  # 2) A static library named foo.a\n"
-      str += "  # 3) A shared library named foo.so\n"
+      str += "  # 2) A static library named libfoo.a\n"
+      str += "  # 3) A shared library named libfoo.so\n"
       str += "  type = #{type}\n"
       str += "\n"
       str += "  # All files in this project that should be compiled\n"
@@ -130,6 +134,184 @@ module Bake
       str += "}\n"
       
       return str;
+    end
+
+    # Parse a project definition from a string
+    def from_s(str)
+      # Get rid of whitespace
+      str.strip!
+
+      # Parse into lines
+      lines = str.split /\n/
+
+      # Remove comments and get rid of empty lines
+      lines.each do |line|
+        line.lstrip!
+        line.sub!(/#.*$/, '')
+        line.rstrip!
+      end
+      lines.delete_if { |line| line.empty? }
+      raise "Project definition empty" if lines.empty?
+
+      # Parse project declaration
+      parse_project_decl lines
+
+      while !lines.empty?
+        # Get the next property string
+        curline = lines.shift
+        tokens = curline.split
+        property = tokens.first
+
+        # Check if we're all done
+        if property == '}'
+          if !lines.empty?
+            raise "Unexpected tokens after final '}' in project definition"
+          end
+          return
+        end
+        
+        # Check for a bad input
+        if !is_valid_property? property
+          raise "Invalid property \"#{property}\""
+        elsif property != 'type'
+          if tokens.size == 1 && lines.shift != "{"
+            raise "Expected \"{\" after property declaration \"#{property}\""
+          elsif tokens.size > 1 && !(tokens[1] == "{" || tokens[1] == "{}")
+            raise "Expected \"{\" after property declaration \"#{property}\""
+          elsif tokens.size > 2 && tokens[2] != "}"
+            raise "Expected \"}\" after property declaration \"#{property} {\""
+          elsif tokens.size > 3
+            raise "Invalid property declaration \"#{property}\""
+          end
+        end
+
+        # Check if the property is empty
+        next if tokens.size == 2 && tokens[1] == "{}"
+        next if tokens.size == 3 && tokens[1] == "{" && tokens[2] == "}"
+        
+        # Parse each property
+        case property
+        when 'type'
+          parse_type curline
+        when 'files'
+          parse_files lines
+        when 'deps'
+          parse_deps lines
+        when 'libs'
+          parse_libs lines
+        when 'inc-paths'
+          parse_inc_paths lines
+        when 'lib-paths'
+          parse_lib_paths lines
+        else
+          # We should never get here, as long as is_valid_property? is correct
+          raise "Unknown project property \"#{property}\""
+        end
+      end
+    end
+
+    # Is the project property valid?
+    def is_valid_property?(property)
+      case property
+      when 'type'
+      when 'files'
+      when 'deps'
+      when 'libs'
+      when 'inc-paths'
+      when 'lib-paths'
+      else
+        return false
+      end
+      return true
+    end
+    
+    # Parse a project declaration, modifying the input array
+    # - Expects "project <name>" or "project <name> {"
+    def parse_project_decl(lines)
+      # Get the first line, which is the project definition
+      line = lines.shift
+      tokens = line.split
+
+      # Check for errors
+      if tokens.size < 2 || tokens[0] != "project"
+        raise "Missing \"project <name>\" from project definition" 
+      end
+      if tokens.size > 2 && tokens[2] != '{' || tokens.size > 3
+        raise "Invalid project declaration \"#{line}\""
+      end
+      if tokens.size == 2
+        curline = lines.shift
+        raise "Expected \"{\" after project declaration" if curline != "{"
+      end
+
+      # Save the project name
+      @name = tokens[1]
+    end
+
+    # Parse the project specification string "type = <type>"
+    def parse_type(str)
+      tokens = str.split
+      if tokens.size != 3 || tokens[0] != 'type' || tokens[1] != '=' || tokens[2] !~ /\w+/
+        raise "Invalid type specification \"#{str}\""
+      end
+      type = tokens[2]
+      raise "Invalid project type \"#{type}\"" if !ProjectType::valid? type
+      @type = type
+    end
+
+    def parse_files(lines)
+      while true
+        curline = lines.shift
+        if curline.nil?
+          raise "Unexpected end of project definition while parsing \"files\" property"
+        end
+        return if curline == '}'
+        @files << curline
+      end
+    end
+
+    def parse_deps(lines)
+      while true
+        curline = lines.shift
+        if curline.nil?
+          raise "Unexpected end of project definition while parsing \"deps\" property"
+        end
+        return if curline == '}'
+        @deps << curline
+      end
+    end
+    
+    def parse_libs(lines)
+      while true
+        curline = lines.shift
+        if curline.nil?
+          raise "Unexpected end of project definition while parsing \"libs\" property"
+        end
+        return if curline == '}'
+        @libs << curline
+      end
+    end
+
+    def parse_inc_paths(lines)
+      while true
+        curline = lines.shift
+        if curline.nil?
+          raise "Unexpected end of project definition while parsing \"inc-paths\" property"
+        end
+        return if curline == '}'
+        @inc_paths << curline
+      end
+    end
+
+    def parse_lib_paths(lines)
+      while true
+        curline = lines.shift
+        if curline.nil?
+          raise "Unexpected end of project definition while parsing \"lib-paths\" property"
+        end
+        return if curline == '}'
+        @lib_paths << curline
+      end
     end
   end
   

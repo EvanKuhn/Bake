@@ -4,9 +4,9 @@ TODO
 [DONE] - bake easy app
 [DONE] - bake easy lib
 [DONE] - bake easy dll
+[    ] - Project::from_s()
+[    ] - BuildCommand::run()
 [    ] - Support -h and --help
-[    ] - 
-[    ] - 
 [    ] - 
 [    ] - 
 

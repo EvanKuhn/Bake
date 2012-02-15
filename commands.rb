@@ -84,7 +84,12 @@ module Bake
         raise "Invalid <project|system> value. See 'bake help build'."
       end
 
+      # Parse the bake.proj file
+
+      # Build the project or system
+      
       puts "Building #{type} '#{name}'"
+      puts "*** Not yet implemented! ***"
       # TODO
     end
   end
