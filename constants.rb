@@ -5,6 +5,9 @@
 #===============================================================================
 module Bake
 
+  # Usage header
+  USAGE_HEADER = "Bake: A Better C++ Build Utility"
+  
   # Directory containing temporary files
   BAKE_DIR = '.bake/'
 

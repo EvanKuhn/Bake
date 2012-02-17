@@ -47,68 +47,6 @@ module Bake
       @desc = desc
     end
   end
-
-  #=============================================================================
-  # The Bake utility runs commands 
-  #=============================================================================
-  class BakeUtility
-    # Get usage info for the Bake utility
-    def self.usage
-      s  = "\n"
-      s += "  ABOUT\n"
-      s += "    Bake is a utility for maintaining and building systems of C++ projects, very\n"
-      s += "    similar to Make. It scales easily from a single application to a large set\n"
-      s += "    of libraries and executables.\n"
-      s += "\n"
-      s += "  USAGE\n"
-      s += "    bake <command> [<args>]\n"
-      s += "\n"
-      s += "  COMMANDS\n"
-      CommandRegistry.commands.each do |command|
-        s += '    ' + command.name.ljust(12) + command.desc + "\n"
-      end
-      s += "\n"
-      s += "  OPTIONS\n"
-      s += "    -h, --help       Display this screen, or help for the given command\n"
-      s += "\n"
-      return s
-    end
-
-    # Run the command
-    def self.run(args)
-      help = false
-      
-      # Remove any options before the command name
-      while !args.empty? && args.first.start_with?('-') do
-        op = args.shift
-        if op == '-h' || op == '--help'
-          # If the help option is given, get rid of the rest of the arguments so the
-          # help command gives help for the Bake utility
-          help = true
-          args.clear
-        else
-          raise "Invalid option #{op}"
-        end
-      end
-      
-      if help || args.empty?
-        # Print usage
-        puts usage
-      elsif !Bake::CommandRegistry.has? args.first
-        # Print usage plus an error message
-        puts usage
-        puts "ERROR: Invalid command '#{args.first}'"
-      else
-        # Get and run the command
-        command = Bake::CommandRegistry.lookup args.first
-        args.shift
-        command.run(args)
-      end
-    rescue => e
-      print "ERROR: ", e.message, "\n"
-      exit
-    end
-  end
   
   #=============================================================================
   # The 'build' command builds all projects defined the bake.proj file
@@ -122,7 +60,8 @@ module Bake
 
     # Get usage info
     def usage
-      s  = "\n"
+      s  = "#{USAGE_HEADER}\n"
+      s += "\n"
       s += "  ABOUT\n"
       s += "    The 'build' command parses the bake.proj file in the current directory and\n"
       s += "    builds the project defined in that file.\n"
@@ -157,7 +96,8 @@ module Bake
 
     # Get usage info
     def usage
-      s  = "\n"
+      s  = "#{USAGE_HEADER}\n"
+      s += "\n"
       s += "  ABOUT\n"
       s += "    The 'clean' command deletes all compiled files. You may clean up all files,\n"
       s += "    those in the current directory, or those for a specific project or system. A\n"
@@ -210,7 +150,8 @@ module Bake
 
     # Get usage info
     def usage
-      s  = "\n"
+      s  = "#{USAGE_HEADER}\n"
+      s += "\n"
       s += "  ABOUT\n"
       s += "    The 'easy' command tells Bake to build all source files in the current dir,\n"
       s += "    even if no bake.proj file exists. If such a file does exist, it is ignored.\n"
@@ -264,9 +205,33 @@ module Bake
     end
     CommandRegistry.insert new
 
+    # Get usage info for the Bake utility
+    def self.bake_usage
+      s  = "#{USAGE_HEADER}\n"
+      s += "\n"
+      s += "  ABOUT\n"
+      s += "    Bake is a utility for maintaining and building systems of C++ projects, very\n"
+      s += "    similar to Make. It scales easily from a single application to a large set\n"
+      s += "    of libraries and executables.\n"
+      s += "\n"
+      s += "  USAGE\n"
+      s += "    bake <command> [<args>]\n"
+      s += "\n"
+      s += "  COMMANDS\n"
+      CommandRegistry.commands.each do |command|
+        s += '    ' + command.name.ljust(12) + command.desc + "\n"
+      end
+      s += "\n"
+      s += "  OPTIONS\n"
+      s += "    -h, --help       Display this screen, or help for the given command\n"
+      s += "\n"
+      return s
+    end
+
     # Get usage info for the help command
     def usage
-      s  = "\n"
+      s  = "#{USAGE_HEADER}\n"
+      s += "\n"
       s += "  ABOUT\n"
       s += "    The 'help' command prints usage info for the Bake utility overall, or for a\n"
       s += "    given command.\n"
@@ -279,26 +244,21 @@ module Bake
 
     # Run the command
     def run(args)
-      usage = "Bake: A Better C++ Build Utility"
-
       # Get the command for which to show usage info
       if args.empty?
         # If no args, show Bake usage
-        usage += BakeUtility::usage
+        puts BakeUtility::usage
       else
         command = CommandRegistry.lookup(args.first)
         if command.nil?
           # If invalid command, show Bake usage plus error message
-          usage += BakeUtility::usage
-          usage += "ERROR: '#{args.first}' is not a valid command"
+          puts BakeUtility::usage
+          puts "ERROR: '#{args.first}' is not a valid command"
         else
           # Otherwise show the command's usage
-          usage += command.usage
+          puts command.usage
         end
       end
-      
-      # Print usage
-      puts usage
     end
   end
   

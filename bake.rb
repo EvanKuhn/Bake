@@ -3,7 +3,7 @@
 #
 # Evan Kuhn, 2012-01-31
 #===============================================================================
-require 'commands'
+require 'utility'
 
 begin
   Bake::BakeUtility::run(ARGV.clone)
