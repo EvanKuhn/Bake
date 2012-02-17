@@ -1,111 +1,166 @@
 #===============================================================================
-# Command-line input parser
+# Command-line input parser.
+#
+# Handles short and long options. Eg:
+#
+#     my_program -h
+#     my_program --help
+#
+# Handles options with or without values. Eg:
+# 
+#     my_program -a            (no value)
+#     my_program -b 1          (with value)
+#     my_program --version     (no value)
+#     my_program --number 4    (with value)
+#     my_program --number=4    (with value)
+#
+# Separates options and params. Eg:
+#
+#     my_program -a foo --bar 123
+#     options: -a, --bar    (assuming neither accept values)
+#     params: foo, 123
 #
 # Evan Kuhn, 2012-02-15
 #===============================================================================
 
+#===============================================================================
+# Each option has:
+#
+# - A short name (-v)
+# - A long name  (--version)
+# - Option-given flag
+# - Has-associated-value flag
+# - Actual value provided
+#===============================================================================
+class OptionData
+  attr_accessor :short_name, :long_name, :given, :has_value, :value
+  alias_method :given?, :given
+  alias_method :has_value?, :has_value
+
+  # Initialize takes:
+  # - A spec string. Eg: "h", "help", or "h,help"
+  # - Value expected?
+  def initialize(spec, has_value)
+    # Parse spec string
+    if(spec =~ /^[a-zA-Z0-9]$/)
+      @short_name = spec
+    elsif(spec =~ /^[a-zA-Z][\w\-]+$/)
+      @long_name = spec
+    elsif(spec =~ /^([a-zA-Z0-9]),([a-zA-Z][\w\-]+)$/)
+      @short_name = $1
+      @long_name = $2
+    else
+      raise "Invalid option spec '#{spec}'"
+    end
+
+    # Finish initialization
+    @has_value = has_value
+  end
+end
+
+#===============================================================================
+# Command-line input parser
+#===============================================================================
 class CommandLine
   def initialize
-    @index = 0
-    @option_index_map = {}  # Map from option name to index
-    @option_keys = []       # Array of option name per index
-    @option_nvals = []      # Num expected values to be given with option
-    @option_given = []      # Flags indicating if the option was specified
-    @option_vals = []       # Actual values given with option
-    @params = []            # Non-option args
+    @options = {}  # Map from option name to data
+    @params = []   # Non-option args
   end
   
   # Add an option to parse.
+  #
   # Params:
   #   1) The option character and/or name. Eg: "h,help", "h", or "help",
   #      depending on which ones you want to accept.
-  #   2) The number of values expected to be passed after the option.
+  #   2) Whether or not the option expects an associated value.
   #
   # Notes:
-  # - Options must start with an alphanumeric character.
-  # - Subsequent characters can include '-' or '_'
-  def option(key, num_values=0)   
-    if(key =~ /^[a-zA-Z0-9]$/)
-      raise "Option '#{key}' already specified" if @option_index_map.has_key? key
-      @option_index_map[key] = @index
-      @option_keys[@index] = key
-      @option_nvals[@index] = num_values
-      @option_given[@index] = false
-      @index += 1
-    elsif(key =~ /^[a-zA-Z][\w\-]+$/)
-      raise "Option '#{key}' already specified" if @option_index_map.has_key? key
-      @option_index_map[key] = @index
-      @option_keys[@index] = key
-      @option_nvals[@index] = num_values
-      @option_given[@index] = false
-      @index += 1
-    elsif(key =~ /^([a-zA-Z0-9]),([a-zA-Z][\w\-]+)$/)
-      raise "Option '#{$1}' already specified" if @option_index_map.has_key? $1
-      raise "Option '#{$2}' already specified" if @option_index_map.has_key? $2
-      @option_index_map[$1] = @index
-      @option_index_map[$2] = @index
-      @option_keys[@index] = $1
-      @option_nvals[@index] = num_values
-      @option_given[@index] = false
-      @index += 1
-    else
-      raise "Invalid option specification '#{key}'"
-    end
+  #   - Options must start with an alphanumeric character.
+  #   - Subsequent characters can include '-' or '_'.
+  #   - Will raise an exception if the option was already added.
+  def option(spec, has_value=false)
+    # Parse the spec and check if the option has already been specified
+    data = OptionData.new(spec, has_value)
+    raise "Option '#{key}' already specified" if accepts? data.short_name
+    raise "Option '#{key}' already specified" if accepts? data.long_name
+
+    # Store the option's index and data
+    @options[data.short_name] = data if !data.short_name.nil?
+    @options[data.long_name]  = data if !data.long_name.nil?
   end
 
   # Parse the command line args
   def parse(args)
     arg_index = 0
-    while arg_index<args.size
+    while arg_index < args.size
       arg = args[arg_index]
+
       if arg.start_with? '--'
-        # Argument is a long option (--foobar)
-        arg = arg[2,arg.length]
-        raise "Option '--#{arg}' not accepted" if !accepts? arg
+        # Argument is a long option (eg: --verbose)
+        op = arg[2,arg.length]
+        value = nil
+
+        # Check if the option and value are specified together ("--op=value")
+        eql_index = op.index '='
+        if !eql_index.nil?
+          # Split "op=value" string and store
+          value = op[eql_index+1, op.size]
+          op = op[0, eql_index]
+        end
+
+        # Check if option is accepted
+        raise "Option '--#{op}' not accepted" if !accepts? op
 
         # Remember that the option was specified
-        index = @option_index_map[arg]
-        @option_given[index] = true
-        
-        # Check for and save the option's values
-        nvals = @option_nvals[index]
-        if nvals > 0
-          if args.size - arg_index - 1 < nvals
-            raise "Option '--#{arg}' must be followed by #{nvals} values"
-          end
-          print "Saving --#{arg} = #{args[arg_index+1,nvals]}\n"
-          @option_vals[index] = args[arg_index+1,nvals]
-          arg_index += nvals
+        data = @options[op]
+        data.given = true
+
+        # Check if given a value that wasn't expected
+        if !data.has_value? && !eql_index.nil?
+          raise "Option '--#{op}' does not expect a value"
         end
         
-      elsif arg.start_with? '-'
-        # Argument is a short option (-a, -abc)
-        arg = arg[1,arg.length]
+        # Get associated value
+        if data.has_value?
+          # If the option was not given as "op=value", get the next value.
+          # Otherwise, save the value we stored before
+          if eql_index.nil?
+            # Get index of next value
+            arg_index += 1
+            # Make sure we actually have a value to save
+            if arg_index >= args.size
+              raise "Option '--#{op}' must be followed by a value"
+            end
+            # Then save the value
+            data.value = args[arg_index]
+          else
+            data.value = value
+          end
+        end
 
+      elsif arg.start_with? '-'
+        # Argument is a short option (eg: -a, -abc)
+        op = arg[1,arg.length]
+        
         # Make sure each character is accepted
-        arg.chars.each_with_index do |c,i|
+        op.chars.each_with_index do |c,i|
           # Check for errors
           raise "Option '-#{c}' not accepted" if !accepts? c
-          index = @option_index_map[c]
-          nvals = @option_nvals[index]
 
-          if nvals > 0 && i < arg.size-1
-            raise "Option '-#{c}' must be followed by #{nvals} values" 
-          end
-          
           # Remember that the option was specified
-          index = @option_index_map[c]
-          @option_given[index] = true
+          data = @options[c]
+          data.given = true
 
           # Check for and save the option's values
-          nvals = @option_nvals[index]
-          if nvals > 0
-            if args.size - arg_index - 1 < nvals
-              raise "Option '--#{arg}' must be followed by #{nvals} values"
+          if data.has_value?
+            # Get index of next value
+            arg_index += 1
+            # Make sure we actually have a value to save
+            if arg_index >= args.size || i >= op.size
+              raise "Option '-#{c}' must be followed by a value"
             end
-            print "Saving --#{c} = #{args[arg_index+1,nvals]}\n"
-            @option_vals[index] = args[arg_index+1,nvals]
-            arg_index += nvals
+            # Then save the value
+            data.value = args[arg_index]
           end
         end
 
@@ -114,40 +169,30 @@ class CommandLine
         @params << arg
       end
 
-      # Finally, increment the index
+      # Increment argument index
       arg_index += 1
     end
   end
-
+  
   # Will this object accept the given option string?
-  def accepts?(option)
-    return @option_index_map.has_key? option
+  def accepts?(op)
+    return @options.has_key? op
   end
 
   # Check if the option has been specified at the command line
-  def has?(arg)
-    return false if !accepts? arg
-    index = @option_index_map[arg]
-    return @option_given[index]
+  def has?(op)
+    return false if !accepts? op
+    return @options[op].given?
   end
 
-  # Get the value(s) for the given arg
+  # Get the value for the given option
   # - Raises an error if the option hasn't been specified
   # - Returns nil if no values are expected 
-  # - Returns a single value if only one is expected
-  # - Returns an array of values if multiple values are expected
-  def value(arg)
-    raise "Option '#{arg}' not accepted" if !accepts? arg
-    raise "Option '#{arg}' not specified" if !has? arg
-    index = @option_index_map[arg]
-    case @option_nvals[index]
-    when 0
-      return nil
-    when 1
-      return @option_vals[index][0]
-    else
-      return @option_vals[index]
-    end
+  # - Returns the value if only one is expected
+  def value(op)
+    raise "Option '#{op}' not accepted" if !accepts? op
+    raise "Option '#{op}' not specified" if !has? op
+    return @options[op].value
   end
 
   # Get the remaining values in ARGV that were not options (ie. did not start
@@ -160,40 +205,48 @@ class CommandLine
   # - Returns an array of option strings.
   # - Call value() to get the corresponding values.
   def options
-    ops = []
-    @option_keys.each_with_index do |op,i|
-      ops << op if @option_given[i]
+    ops = {}
+    @options.each_value do |data|
+      if data.given?
+        if !data.short_name.nil?
+          ops[data.short_name] = nil
+        else
+          ops[data.long_name] = nil
+        end
+      end
     end
-    return ops
+    return ops.keys
   end
-end
 
-
-
-
-
-# TODO
-begin
-  cmdline = CommandLine.new
-  cmdline.option("h,help")
-  cmdline.option("verbose")
-  cmdline.option("f", 1)
-  cmdline.option("x,yyyy", 1)
-  cmdline.option('2', 2)
-  cmdline.option('what-you-want', 1)
-  
-  cmdline.parse(ARGV)
-  
-  puts "Params: " + cmdline.params.join(', ')
-  puts "Options: "
-  cmdline.options.each do |op|
-    print op + ' = '
-    if !cmdline.value(op).nil?
-      print cmdline.value(op)
+  # Test function
+  # TODO - remove this later!
+  def self.test
+    begin
+      cmdline = CommandLine.new
+      cmdline.option("h,help")
+      cmdline.option("verbose")
+      cmdline.option("f", true)
+      cmdline.option('2', true)
+      cmdline.option('cool', true)
+      
+      cmdline.parse(ARGV)
+      
+      puts "Params: " + cmdline.params.to_s
+      cmdline.params.each do |x|
+        puts "  #{x}"
+      end
+      
+      puts "Options: "
+      cmdline.options.each do |op|
+        val = cmdline.value(op)
+        print "  #{op}"
+        print " = #{val}" if !val.nil?
+        print "\n"
+      end
+      
+    rescue => e
+      puts "ERROR: " + e.message
     end
-    print "\n"
   end
   
-rescue => e
-  puts "ERROR: " + e.message
 end

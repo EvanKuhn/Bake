@@ -6,15 +6,9 @@
 require 'commands'
 
 begin
-  # Get the command given by the user, or use the HelpCommand otherwise
-  command_given = !ARGV.empty? && Bake::CommandRegistry.has?(ARGV[0])
-  command = (command_given ? Bake::CommandRegistry.lookup(ARGV[0]) : Bake::HelpCommand.new)
-  
-  # Run the command
-  command.run
+  Bake::BakeUtility::run(ARGV.clone)
 rescue => e
-  print "Error: ", e.message, "\n"
-  exit
+  print "ERROR: ", e.message, "\n"
 end
 
 exit
