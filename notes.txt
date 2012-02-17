@@ -81,24 +81,62 @@ system SomeComplexSystem {
 }
 
 
+# This system builds everything
+system foobarbat {
+  projects {
+    foo
+    bar
+    bat
+  }
+}
+
+# This system just builds foo and bar
+system foobar {
+  projects {
+    foo
+    bar
+  }
+}
+
+
+# This is a bake.map file
+FooBarLibPath = /usr/foo/lib/
+FooBarIncPath = /usr/foo/include/
+
+
+# Then we use the mappings like this:
+project abc {
+  mappings = ../bake.map
+
+  lib-paths {
+    <FooBarLibPath>
+  }
+
+  inc-paths {
+    <FooBarIncPath>
+  }
+}
+
+
 ================================================================================
 Directory structure:
 ================================================================================
 
 SystemDir/
-  .bake
+  bake.sys
+  bake.map
   Proj1/
-    .bakeproj
+    bake.proj
     foo.h
     bar.h
     bar.cpp
   Proj2/
-    .bakeproj
+    bake.proj
     cat.h
     dog.cpp
   ...
 
-You can see we have the .bakesys (system-level) and .bakeproj (project-level)
+You can see we have the bake.sys (system-level) and bake.proj (project-level)
 bake files.
 
 Do we even need .bakesys vs .bakeproj?  What if we just merge all bake files

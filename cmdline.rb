@@ -1,16 +1,8 @@
-
-
-#cmdline.option("h,help")
-#cmdline.option("f,file", 1)
-#cmdline.option()
-
-#cmdline.parse(ARGV)
-
-#cmdline.has('h')
-#value = cmdline.get('f')
-
-
-
+#===============================================================================
+# Command-line input parser
+#
+# Evan Kuhn, 2012-02-15
+#===============================================================================
 
 class CommandLine
   def initialize
@@ -61,17 +53,12 @@ class CommandLine
     end
   end
 
-  # Will this object accept the given option string?
-  def accepts?(option)
-    return @option_index_map.has_key? option
-  end
-
   # Parse the command line args
   def parse(args)
-    args.each do |arg|
+    arg_index = 0
+    while arg_index<args.size
+      arg = args[arg_index]
       if arg.start_with? '--'
-        puts "long option '#{arg}'"
-        
         # Argument is a long option (--foobar)
         arg = arg[2,arg.length]
         raise "Option '--#{arg}' not accepted" if !accepts? arg
@@ -80,8 +67,16 @@ class CommandLine
         index = @option_index_map[arg]
         @option_given[index] = true
         
-        # TODO - check for and save the option's values
-        # @option_vals[index]
+        # Check for and save the option's values
+        nvals = @option_nvals[index]
+        if nvals > 0
+          if args.size - arg_index - 1 < nvals
+            raise "Option '--#{arg}' must be followed by #{nvals} values"
+          end
+          print "Saving --#{arg} = #{args[arg_index+1,nvals]}\n"
+          @option_vals[index] = args[arg_index+1,nvals]
+          arg_index += nvals
+        end
         
       elsif arg.start_with? '-'
         # Argument is a short option (-a, -abc)
@@ -89,8 +84,6 @@ class CommandLine
 
         # Make sure each character is accepted
         arg.chars.each_with_index do |c,i|
-          puts "short option '#{c}'"
-          
           # Check for errors
           raise "Option '-#{c}' not accepted" if !accepts? c
           index = @option_index_map[c]
@@ -104,25 +97,41 @@ class CommandLine
           index = @option_index_map[c]
           @option_given[index] = true
 
-          # TODO - check for and save the option's values
-          # @option_vals[index]
+          # Check for and save the option's values
+          nvals = @option_nvals[index]
+          if nvals > 0
+            if args.size - arg_index - 1 < nvals
+              raise "Option '--#{arg}' must be followed by #{nvals} values"
+            end
+            print "Saving --#{c} = #{args[arg_index+1,nvals]}\n"
+            @option_vals[index] = args[arg_index+1,nvals]
+            arg_index += nvals
+          end
         end
 
       else
         # Argument is a param (ie. not an option)
         @params << arg
       end
+
+      # Finally, increment the index
+      arg_index += 1
     end
+  end
+
+  # Will this object accept the given option string?
+  def accepts?(option)
+    return @option_index_map.has_key? option
   end
 
   # Check if the option has been specified at the command line
   def has?(arg)
-    return false if !@param_index_map.has_key? arg
-    index = @param_index_map[arg]
+    return false if !accepts? arg
+    index = @option_index_map[arg]
     return @option_given[index]
   end
 
-  # Get the value for the given arg
+  # Get the value(s) for the given arg
   # - Raises an error if the option hasn't been specified
   # - Returns nil if no values are expected 
   # - Returns a single value if only one is expected
@@ -130,14 +139,14 @@ class CommandLine
   def value(arg)
     raise "Option '#{arg}' not accepted" if !accepts? arg
     raise "Option '#{arg}' not specified" if !has? arg
-    index = @param_index_map[arg]
-    case @param_nvals[index]
+    index = @option_index_map[arg]
+    case @option_nvals[index]
     when 0
       return nil
     when 1
-      return @param_vals[index][0]
+      return @option_vals[index][0]
     else
-      return @param_vals[index]
+      return @option_vals[index]
     end
   end
 
@@ -162,18 +171,29 @@ end
 
 
 
+
+# TODO
 begin
   cmdline = CommandLine.new
   cmdline.option("h,help")
   cmdline.option("verbose")
   cmdline.option("f", 1)
+  cmdline.option("x,yyyy", 1)
   cmdline.option('2', 2)
   cmdline.option('what-you-want', 1)
   
   cmdline.parse(ARGV)
   
   puts "Params: " + cmdline.params.join(', ')
-  puts "Options: " + cmdline.options.join(', ')
+  puts "Options: "
+  cmdline.options.each do |op|
+    print op + ' = '
+    if !cmdline.value(op).nil?
+      print cmdline.value(op)
+    end
+    print "\n"
+  end
+  
 rescue => e
   puts "ERROR: " + e.message
 end
