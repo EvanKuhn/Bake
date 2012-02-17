@@ -4,14 +4,15 @@ TODO
 [DONE] - bake easy app
 [DONE] - bake easy lib
 [DONE] - bake easy dll
-[    ] - Project::from_s()
-[    ] - BuildCommand::run()
-[    ] - Support -h and --help
+[DONE] - Project::from_s()
+[DONE] - BuildCommand::run()
+[DONE] - Support -h and --help
+[DONE] - Finish cmdline.rb
 [    ] - 
 [    ] - 
 
 ================================================================================
 FOR LATER
 ================================================================================
-[    ] - Finish cmdline.rb, or use optparse, so we have a solution for parsing
-         command-line options.
+[    ] - 
+

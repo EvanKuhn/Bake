@@ -1,5 +1,5 @@
 #===============================================================================
-# The BakeUtility object encapsulates the high-level logic and runs commands
+# The BakeUtility object encapsulates the high-level logic and runs commands.
 #
 # Evan Kuhn, 2012-02-16
 #===============================================================================
@@ -21,8 +21,8 @@ module Bake
       while !args.empty? && args.first.start_with?('-') do
         op = args.shift
         if op == '-h' || op == '--help'
-          # If the help option is given, get rid of the rest of the arguments so the
-          # help command gives help for the Bake utility
+          # If the help option is given, get rid of the rest of the arguments so
+          # the help command gives help for the Bake utility
           help = true
           args.clear
         else

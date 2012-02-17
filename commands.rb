@@ -117,7 +117,7 @@ module Bake
 
       if action == 'all'
         puts "*** I'm not implemented yet! ***"
-        # TODO
+        # TODO - finish 'clean' command
       elsif action == 'current'
         if(File.exists?(BAKE_DIR) && File.directory?(BAKE_DIR))
           puts "Cleaning current directory"
@@ -130,10 +130,10 @@ module Bake
         end
       elsif action == 'project'
         puts "*** I'm not implemented yet! ***"
-        # TODO
+        # TODO - finish 'clean' command
       elsif action == 'system'
         puts "*** I'm not implemented yet! ***"
-        # TODO
+        # TODO - finish 'clean' command
       end          
     end
   end
