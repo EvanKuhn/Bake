@@ -16,6 +16,7 @@ TODO
 [    ] - Support build for systems
 [    ] - Support clean for systems
 [    ] - Support init for systems
+[    ] - Support mappings and bake.map files
 
 ================================================================================
 FOR LATER

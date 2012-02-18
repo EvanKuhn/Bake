@@ -62,14 +62,14 @@ module Bake
     # Get usage info
     def usage
       s  = "#{USAGE_HEADER}\n"
-      s += "\n"
-      s += "  ABOUT\n"
-      s += "    The 'build' command parses the bake.proj file in the current directory and\n"
-      s += "    builds the project defined in that file.\n"
-      s += "\n"
-      s += "  USAGE\n"
-      s += "    bake build\n"
-      s += "\n"
+      s << "\n"
+      s << "  ABOUT\n"
+      s << "    The 'build' command parses the bake.proj file in the current directory and\n"
+      s << "    builds the project defined in that file.\n"
+      s << "\n"
+      s << "  USAGE\n"
+      s << "    bake build\n"
+      s << "\n"
       return s
     end
     
@@ -109,14 +109,14 @@ module Bake
     # Get usage info
     def usage
       s  = "#{USAGE_HEADER}\n"
-      s += "\n"
-      s += "  ABOUT\n"
-      s += "    The 'clean' command deletes all files in the .bake dir. If a bake.proj file\n"
-      s += "    file exists, it will also clean up the output file created during compilation.\n"
-      s += "\n"
-      s += "  USAGE\n"
-      s += "    bake clean \n"
-      s += "\n"
+      s << "\n"
+      s << "  ABOUT\n"
+      s << "    The 'clean' command deletes all files in the .bake dir. If a bake.proj file\n"
+      s << "    file exists, it will also clean up the output file created during compilation.\n"
+      s << "\n"
+      s << "  USAGE\n"
+      s << "    bake clean \n"
+      s << "\n"
       return s
     end
     
@@ -177,14 +177,14 @@ module Bake
     # Get usage info
     def usage
       s  = "#{USAGE_HEADER}\n"
-      s += "\n"
-      s += "  ABOUT\n"
-      s += "    The 'easy' command tells Bake to build all source files in the current dir,\n"
-      s += "    even if no bake.proj file exists. If such a file does exist, it is ignored.\n"
-      s += "\n"
-      s += "  USAGE\n"
-      s += "    bake easy [app|lib|dll] [name]\n"
-      s += "\n"
+      s << "\n"
+      s << "  ABOUT\n"
+      s << "    The 'easy' command tells Bake to build all source files in the current dir,\n"
+      s << "    even if no bake.proj file exists. If such a file does exist, it is ignored.\n"
+      s << "\n"
+      s << "  USAGE\n"
+      s << "    bake easy [app|lib|dll] [name]\n"
+      s << "\n"
       return s
     end
     
@@ -247,19 +247,19 @@ module Bake
     # Get usage info
     def usage
       s  = "#{USAGE_HEADER}\n"
-      s += "\n"
-      s += "  ABOUT\n"
-      s += "    The 'init' command creates a bake.proj file and initializes it with the\n"
-      s += "    source files in the current dir. If such a file already exists, it will not\n"
-      s += "    be changed.\n"
-      s += "\n"
-      s += "  USAGE\n"
-      s += "    bake init [name] [type]\n"
-      s += "\n"
-      s += "  WHERE\n"
-      s += "    name  - Project name. Default: #{DEFAULT_NAME}\n"
-      s += "    type  - Project type. Default: #{DEFAULT_TYPE}\n"
-      s += "\n"
+      s << "\n"
+      s << "  ABOUT\n"
+      s << "    The 'init' command creates a bake.proj file and initializes it with the\n"
+      s << "    source files in the current dir. If such a file already exists, it will not\n"
+      s << "    be changed.\n"
+      s << "\n"
+      s << "  USAGE\n"
+      s << "    bake init [name] [type]\n"
+      s << "\n"
+      s << "  WHERE\n"
+      s << "    name  - Project name. Default: #{DEFAULT_NAME}\n"
+      s << "    type  - Project type. Default: #{DEFAULT_TYPE}\n"
+      s << "\n"
       return s
     end
     
@@ -316,37 +316,37 @@ module Bake
     # Get usage info for the Bake utility
     def self.bake_usage
       s  = "#{USAGE_HEADER}\n"
-      s += "\n"
-      s += "  ABOUT\n"
-      s += "    Bake is a utility for maintaining and building systems of C++ projects, very\n"
-      s += "    similar to Make. It scales easily from a single application to a large set\n"
-      s += "    of libraries and executables.\n"
-      s += "\n"
-      s += "  USAGE\n"
-      s += "    bake <command> [<args>]\n"
-      s += "\n"
-      s += "  COMMANDS\n"
+      s << "\n"
+      s << "  ABOUT\n"
+      s << "    Bake is a utility for maintaining and building systems of C++ projects, very\n"
+      s << "    similar to Make. It scales easily from a single application to a large set\n"
+      s << "    of libraries and executables.\n"
+      s << "\n"
+      s << "  USAGE\n"
+      s << "    bake <command> [<args>]\n"
+      s << "\n"
+      s << "  COMMANDS\n"
       CommandRegistry.commands.each do |command|
-        s += '    ' + command.name.ljust(12) + command.desc + "\n"
+        s << '    ' + command.name.ljust(12) + command.desc + "\n"
       end
-      s += "\n"
-      s += "  OPTIONS\n"
-      s += "    -h, --help       Display this screen, or help for the given command\n"
-      s += "\n"
+      s << "\n"
+      s << "  OPTIONS\n"
+      s << "    -h, --help       Display this screen, or help for the given command\n"
+      s << "\n"
       return s
     end
 
     # Get usage info for the help command
     def usage
       s  = "#{USAGE_HEADER}\n"
-      s += "\n"
-      s += "  ABOUT\n"
-      s += "    The 'help' command prints usage info for the Bake utility overall, or for a\n"
-      s += "    given command.\n"
-      s += "\n"
-      s += "  USAGE\n"
-      s += "    bake help [command]\n"
-      s += "\n"
+      s << "\n"
+      s << "  ABOUT\n"
+      s << "    The 'help' command prints usage info for the Bake utility overall, or for a\n"
+      s << "    given command.\n"
+      s << "\n"
+      s << "  USAGE\n"
+      s << "    bake help [command]\n"
+      s << "\n"
       return s
     end
 

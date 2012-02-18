@@ -20,9 +20,86 @@ How to link against a static library
   - g++ -o main main.cpp ../libfoobar.a     (list path to lib)
 
 
+================================================================================
+Directory structure:
+================================================================================
+
+SystemDir/
+  bake.sys
+  bake.map
+  Proj1/
+    bake.proj
+    foo.h
+    bar.h
+    bar.cpp
+  Proj2/
+    bake.proj
+    cat.h
+    dog.cpp
+  ...
+
+Files:
+- bake.sys  (system-level)
+- bake.proj (project-level)
+- bake.map  (mappings)
+
+Are these all needed??
+
 
 ================================================================================
-Sample files
+System file
+================================================================================
+
+# A system defines a set of projects to build. Here we define a system named
+# SomeComplexSystem.
+system SomeComplexSystem {
+  # Here we list the projects in the system. Each project can optionally include
+  # the location (to the right of the equals sign). If no location is given,
+  # bake will look in the subdirectory named after the project.
+  projects {
+    Proj1 [ = ./Proj1]
+    Proj2 [ = ./Proj2]
+    Proj3 [ = ./Proj3]
+  }
+}
+
+
+# This system builds everything
+system foobarbat {
+  projects {
+    foo
+    bar
+    bat
+  }
+}
+
+# This system just builds foo and bar
+system foobar {
+  projects {
+    foo
+    bar
+  }
+}
+
+
+system {
+  build all {
+    # all files...
+  }
+
+  build cats {
+    # cat-related files...
+  }
+
+  build dogs {
+    # dog-related files...
+  }
+}
+
+
+
+================================================================================
+Projec file
 ================================================================================
 
 # Define a project named 'Proj1'
@@ -65,40 +142,6 @@ project Proj1 {
 }
 
 
-
-
-# A system defines a set of projects to build. Here we define a system named
-# SomeComplexSystem.
-system SomeComplexSystem {
-  # Here we list the projects in the system. Each project can optionally include
-  # the location (to the right of the equals sign). If no location is given,
-  # bake will look in the subdirectory named after the project.
-  projects {
-    Proj1 [ = ./Proj1]
-    Proj2 [ = ./Proj2]
-    Proj3 [ = ./Proj3]
-  }
-}
-
-
-# This system builds everything
-system foobarbat {
-  projects {
-    foo
-    bar
-    bat
-  }
-}
-
-# This system just builds foo and bar
-system foobar {
-  projects {
-    foo
-    bar
-  }
-}
-
-
 # This is a bake.map file
 FooBarLibPath = /usr/foo/lib/
 FooBarIncPath = /usr/foo/include/
@@ -116,32 +159,4 @@ project abc {
     <FooBarIncPath>
   }
 }
-
-
-================================================================================
-Directory structure:
-================================================================================
-
-SystemDir/
-  bake.sys
-  bake.map
-  Proj1/
-    bake.proj
-    foo.h
-    bar.h
-    bar.cpp
-  Proj2/
-    bake.proj
-    cat.h
-    dog.cpp
-  ...
-
-You can see we have the bake.sys (system-level) and bake.proj (project-level)
-bake files.
-
-Do we even need .bakesys vs .bakeproj?  What if we just merge all bake files
-together as we parse?
-
-
-
 

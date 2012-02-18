@@ -76,13 +76,13 @@ module Bake
 
     # Initializer
     # - Takes an optional filename, which it will parse
-    def initialize(str=nil)
+    def initialize(file=nil)
       @files = []
       @deps = []
       @libs = []
       @inc_paths = []
       @lib_paths = []
-      from_s Utils::read_file str if !str.nil?
+      from_s Utils::read_file file if !file.nil?
     end
     
     # Get the project's output filename
@@ -90,12 +90,12 @@ module Bake
       return name + ProjectType::filename_suffix(type)
     end
 
-    # Write project to a file
+    # Write the project to a file
     def to_file(file)
       Utils.write_file(file, to_s)
     end
 
-    # Read project from a file
+    # Read the project from a file
     def from_file(file)
       from_s Utils::read_file file
     end
@@ -104,9 +104,8 @@ module Bake
     # that is expected in a bake.proj file.
     def to_s
       # First check that we have all necessary fields
-      raise 'Missing project name'  if(name.nil?  || name.empty?)
-      raise 'Missing project type'  if(type.nil?  || type.empty?)
-      raise 'Missing project files' if(files.nil? || files.empty?)
+      raise 'Missing project name' if(name.nil? || name.empty?)
+      raise 'Missing project type' if(type.nil? || type.empty?)
 
       # Now we can build the string and return it
       str = ''
@@ -121,28 +120,28 @@ module Bake
       str += "\n"
       str += "  # All files in this project that should be compiled\n"
       str += "  files {\n"
-      files.each { |x| str += "    #{x}\n" } if(!files.nil?)
+      files.each { |x| str += "    #{x}\n" } if !files.nil?
       str += "  }\n"
       str += "\n"
       str += "  # All the other projects that this project depends on\n"
       str += "  deps {\n"
-      deps.each { |x| str += "    #{x}\n" } if(!deps.nil?)
+      deps.each { |x| str += "    #{x}\n" } if !deps.nil?
       str += "  }\n"
       str += "\n"
       str += "  # A list of third-party libraries used by this project.\n"
       str += "  # For a library file named 'libfoo.a' or 'libfoo.so', just write 'foo'.\n"
       str += "  libs {\n"
-      libs.each { |x| str += "    #{x}\n" } if(!libs.nil?)
+      libs.each { |x| str += "    #{x}\n" } if !libs.nil?
       str += "  }\n"
       str += "\n"
       str += "  # Paths to search for included files\n"
       str += "  inc-paths {\n"
-      inc_paths.each { |x| str += "    #{x}\n" } if(!inc_paths.nil?)
+      inc_paths.each { |x| str += "    #{x}\n" } if !inc_paths.nil?
       str += "  }\n"
       str += "\n"
       str += "  # Paths to search for third-party library files\n"
       str += "  lib-paths {\n"
-      lib_paths.each { |x| str += "    #{x}\n" } if(!lib_paths.nil?)
+      lib_paths.each { |x| str += "    #{x}\n" } if !lib_paths.nil?
       str += "  }\n"
       str += "}\n"
       
