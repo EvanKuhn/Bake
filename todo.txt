@@ -8,8 +8,14 @@ TODO
 [DONE] - BuildCommand::run()
 [DONE] - Support -h and --help
 [DONE] - Finish cmdline.rb
-[    ] - 
-[    ] - 
+[DONE] - Use CommandLine to parse inputs in each command. Support -h, --help.
+[DONE] - Fix up 'bake clean'. If there's a .bake dir, empty it. If there's a
+         bake.proj file, delete the output file.
+[DONE] - Add 'init' command. Writes bake.proj or bake.sys file.
+[    ] - Write System class
+[    ] - Support build for systems
+[    ] - Support clean for systems
+[    ] - Support init for systems
 
 ================================================================================
 FOR LATER

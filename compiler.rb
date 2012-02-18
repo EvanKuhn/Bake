@@ -67,13 +67,13 @@ module Bake
         end
 
         # Run the command and save output in a temp file
-        system(command + ' &> ' + COMPILER_OUTPUT_FILE)
+        system(command + ' &> ' + COMPILER_OUTPUT_FILEPATH)
         
         # If the command failed, record the errors
         if !$?.success?
           print " (failed)"
           num_errors += 1
-          error_str += Utils.read_file(COMPILER_OUTPUT_FILE, '  ')
+          error_str += Utils.read_file(COMPILER_OUTPUT_FILEPATH, '  ')
         end
         print "\n"
       end
@@ -98,10 +98,10 @@ module Bake
         end
         
         # Run the linker command
-        system(command + ' &> ' + COMPILER_OUTPUT_FILE)
+        system(command + ' &> ' + COMPILER_OUTPUT_FILEPATH)
         
         # If the command failed, raise the errors
-        raise Utils.read_file(COMPILER_OUTPUT_FILE, '  ') if !$?.success?
+        raise Utils.read_file(COMPILER_OUTPUT_FILEPATH, '  ') if !$?.success?
       rescue => e
         raise raise "Linker Errors:\n\n#{e.message}\n"
       end
@@ -115,10 +115,10 @@ module Bake
         
         # Run the linker command
         command = "ar -cvq lib#{project.name}.a " + @obj_files.join(' ')
-        system(command + ' &> ' + COMPILER_OUTPUT_FILE)
+        system(command + ' &> ' + COMPILER_OUTPUT_FILEPATH)
         
         # If the command failed, raise the errors
-        raise Utils.read_file(COMPILER_OUTPUT_FILE, '  ') if !$?.success?
+        raise Utils.read_file(COMPILER_OUTPUT_FILEPATH, '  ') if !$?.success?
       rescue => e
         raise raise "Linker Errors:\n\n#{e.message}\n"
       end
@@ -132,17 +132,17 @@ module Bake
         
         # Run the linker command
         command = "g++ -shared -o lib#{project.name}.so " + @obj_files.join(' ')
-        system(command + ' &> ' + COMPILER_OUTPUT_FILE)
+        system(command + ' &> ' + COMPILER_OUTPUT_FILEPATH)
         
         # If the command failed, raise the errors
-        raise Utils.read_file(COMPILER_OUTPUT_FILE, '  ') if !$?.success?
+        raise Utils.read_file(COMPILER_OUTPUT_FILEPATH, '  ') if !$?.success?
       rescue => e
         raise raise "Linker Errors:\n\n#{e.message}\n"
       end
     end
     
     # Output file used for temporary compiler/linker output
-    COMPILER_OUTPUT_FILE = BAKE_DIR + COMPILER_OUTPUT_FILENAME
+    COMPILER_OUTPUT_FILEPATH = BAKE_DIR + COMPILER_OUTPUT_FILE
     
   end # class Compiler
 

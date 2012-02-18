@@ -17,6 +17,13 @@ module Bake
         return contents
       end
     end
+
+    # Write to a file. Will overwrite.
+    def self.write_file(filename, contents)
+      File.open(filename, 'w') do |f|
+        f.write contents
+      end
+    end
     
     # Private implementation of get_source_files()
     def self.get_source_files_impl(dir, recurse, output)

@@ -75,14 +75,14 @@ module Bake
     attr_accessor :name, :type, :files, :deps, :libs, :inc_paths, :lib_paths
 
     # Initializer
-    # - Takes an optional string representation, on which it will call from_s()
+    # - Takes an optional filename, which it will parse
     def initialize(str=nil)
       @files = []
       @deps = []
       @libs = []
       @inc_paths = []
       @lib_paths = []
-      from_s str if !str.nil?
+      from_s Utils::read_file str if !str.nil?
     end
     
     # Get the project's output filename
@@ -90,6 +90,16 @@ module Bake
       return name + ProjectType::filename_suffix(type)
     end
 
+    # Write project to a file
+    def to_file(file)
+      Utils.write_file(file, to_s)
+    end
+
+    # Read project from a file
+    def from_file(file)
+      from_s Utils::read_file file
+    end
+    
     # Convert the project to a string. The output string will match the format
     # that is expected in a bake.proj file.
     def to_s
@@ -126,7 +136,7 @@ module Bake
       str += "  }\n"
       str += "\n"
       str += "  # Paths to search for included files\n"
-      str += "  include-paths {\n"
+      str += "  inc-paths {\n"
       inc_paths.each { |x| str += "    #{x}\n" } if(!inc_paths.nil?)
       str += "  }\n"
       str += "\n"

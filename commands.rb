@@ -3,6 +3,7 @@
 # 
 # Evan Kuhn, 2012-02-05
 #===============================================================================
+require 'cmdline'
 require 'compiler'
 require 'fileutils'
 require 'project'
@@ -74,9 +75,20 @@ module Bake
     
     # Run the command
     def run(args)
+      # Parse command-line args
+      cmdline = CommandLine.new
+      cmdline.option("h,help")
+      cmdline.parse(args)
+
+      # Show help?
+      if cmdline.has? 'help'
+        puts usage
+        return
+      end
+
       # Parse the bake.proj file
-      raise "No bake.proj file found" if !File.exists? 'bake.proj'
-      project = Project.new Utils::read_file 'bake.proj'
+      raise "No bake.proj file found" if !File.exists? BAKE_PROJ_FILE
+      project = Project.new BAKE_PROJ_FILE
 
       # Build the project
       comp = Compiler.new
@@ -99,42 +111,56 @@ module Bake
       s  = "#{USAGE_HEADER}\n"
       s += "\n"
       s += "  ABOUT\n"
-      s += "    The 'clean' command deletes all compiled files. You may clean up all files,\n"
-      s += "    those in the current directory, or those for a specific project or system. A\n"
-      s += "    bake.proj file is required for all cleanup types except 'current', which will\n"
-      s += "    simply delete the contents of the .bake directory.\n"
+      s += "    The 'clean' command deletes all files in the .bake dir. If a bake.proj file\n"
+      s += "    file exists, it will also clean up the output file created during compilation.\n"
       s += "\n"
       s += "  USAGE\n"
-      s += "    bake clean <all|current|project|system> [name]\n"
+      s += "    bake clean \n"
       s += "\n"
       return s
     end
     
     # Run the command
     def run(args)
-      raise "No action given. See 'bake help clean'." if(args.size < 1)
-      action = args[0]
+      # Parse command-line args
+      cmdline = CommandLine.new
+      cmdline.option("h,help")
+      cmdline.parse(args)
 
-      if action == 'all'
-        puts "*** I'm not implemented yet! ***"
-        # TODO - finish 'clean' command
-      elsif action == 'current'
-        if(File.exists?(BAKE_DIR) && File.directory?(BAKE_DIR))
-          puts "Cleaning current directory"
-          Dir.new(BAKE_DIR).each do |file|
-            next if(file == '.' || file == '..')
-            file = BAKE_DIR + file
-            FileUtils.rm_rf(file)
-          end
-          puts ".bake/ dir cleaned"
+      # Show help?
+      if cmdline.has? 'help'
+        puts usage
+        return
+      end
+
+      cleaned = false
+
+      # Clean up .bake dir
+      if File.exists?(BAKE_DIR) && File.directory?(BAKE_DIR)
+        Dir.new(BAKE_DIR).each do |file|
+          next if(file == '.' || file == '..')
+          file = BAKE_DIR + file
+          FileUtils.rm_rf(file)
         end
-      elsif action == 'project'
-        puts "*** I'm not implemented yet! ***"
-        # TODO - finish 'clean' command
-      elsif action == 'system'
-        puts "*** I'm not implemented yet! ***"
-        # TODO - finish 'clean' command
-      end          
+        puts "Cleaned .bake dir"
+        cleaned = true
+      end
+
+      # Clean up output file
+      if File.exists? BAKE_PROJ_FILE
+        begin
+          project = Project.new BAKE_PROJ_FILE
+          if File.exists? project.outfile
+            File.delete project.outfile
+            puts "Deleted output file #{project.outfile}"
+            cleaned = true
+          end
+        rescue => e
+          puts "Error cleaning output file: " + e.message
+        end
+      end
+
+      puts "Nothing to clean" if !cleaned
     end
   end
   
@@ -164,7 +190,19 @@ module Bake
     
     # Run the command
     def run(args)
+      # Parse command-line args
+      cmdline = CommandLine.new
+      cmdline.option("h,help")
+      cmdline.parse(args)
+
+      # Show help?
+      if cmdline.has? 'help'
+        puts usage
+        return
+      end
+
       # Get and check params
+      args = cmdline.params
       type = (args.length >= 1 ? args[0] : ProjectType::APP)
       name = (args.length >= 2 ? args[1] : type)
       
@@ -192,6 +230,76 @@ module Bake
       comp = Compiler.new
       comp.build(project)
     end
+  end
+
+  #=============================================================================
+  # The 'init' command creates a bake.proj file and initializes it with the
+  # source files in the current dir. If such a file already exists, it will not
+  # be changed.
+  #=============================================================================
+  class InitCommand < Command
+    # Set up the name and description, and add to the CommandRegistry
+    def initialize
+      super("init", "Write a bake.proj file initialized with source files")
+    end
+    CommandRegistry.insert new
+
+    # Get usage info
+    def usage
+      s  = "#{USAGE_HEADER}\n"
+      s += "\n"
+      s += "  ABOUT\n"
+      s += "    The 'init' command creates a bake.proj file and initializes it with the\n"
+      s += "    source files in the current dir. If such a file already exists, it will not\n"
+      s += "    be changed.\n"
+      s += "\n"
+      s += "  USAGE\n"
+      s += "    bake init [name] [type]\n"
+      s += "\n"
+      s += "  WHERE\n"
+      s += "    name  - Project name. Default: #{DEFAULT_NAME}\n"
+      s += "    type  - Project type. Default: #{DEFAULT_TYPE}\n"
+      s += "\n"
+      return s
+    end
+    
+    # Run the command
+    def run(args)
+      # Parse command-line args
+      cmdline = CommandLine.new
+      cmdline.option("h,help")
+      cmdline.parse(args)
+
+      # Show help?
+      if cmdline.has? 'help'
+        puts usage
+        return
+      end
+
+      # Get project name
+      args = cmdline.params.clone
+      name = (args.empty? ? DEFAULT_NAME : args.shift)
+      type = (args.empty? ? DEFAULT_TYPE : args.shift)
+
+      raise "Invalid name '#{name}'" if name !~ /^\w+$/
+      raise "Invalid type '#{type}'" if !ProjectType::valid? type
+
+      # Make sure no bake.proj file exists
+      if File.exists? BAKE_PROJ_FILE
+        puts BAKE_PROJ_FILE + ' already exists'
+      else
+        project = Project.new
+        project.name = name
+        project.type = type
+        project.files = Utils::get_source_files
+        project.to_file BAKE_PROJ_FILE
+        puts BAKE_PROJ_FILE + ' file created'
+      end
+    end
+
+    # Defaults
+    DEFAULT_NAME = 'my_project'
+    DEFAULT_TYPE = ProjectType::APP
   end
 
   #=============================================================================
