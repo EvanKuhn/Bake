@@ -12,10 +12,10 @@ TODO
 [DONE] - Fix up 'bake clean'. If there's a .bake dir, empty it. If there's a
          bake.proj file, delete the output file.
 [DONE] - Add 'init' command. Writes bake.proj or bake.sys file.
-[    ] - Write System class
+[DONE] - Write System class
 [    ] - Support build for systems
 [    ] - Support clean for systems
-[    ] - Support init for systems
+[DONE] - Support init for systems
 [    ] - Support mappings and bake.map files
 
 ================================================================================

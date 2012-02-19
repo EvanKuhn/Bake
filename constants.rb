@@ -11,10 +11,9 @@ module Bake
   # Directory containing temporary files
   BAKE_DIR = '.bake/'
 
-  # Bake project filen
-  BAKE_PROJ_FILE = 'bake.proj'
-  
-  # Compiler output file
+  # Filenames
+  BAKE_PROJ_FILE       = 'bake.proj'
+  BAKE_SYS_FILE        = 'bake.sys'
   COMPILER_OUTPUT_FILE = 'compiler-output'
 
 end # module Bake

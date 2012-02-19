@@ -110,40 +110,40 @@ module Bake
       # Now we can build the string and return it
       str = ''
 
-      str += 'project ' + name + " {\n"
-      str += "  # The project type determines what kind of file will be created, as well as\n"
-      str += "  # its name. Given a project named 'foo', we can build one of three file types:\n"
-      str += "  # 1) An application named foo\n"
-      str += "  # 2) A static library named libfoo.a\n"
-      str += "  # 3) A shared library named libfoo.so\n"
-      str += "  type = #{type}\n"
-      str += "\n"
-      str += "  # All files in this project that should be compiled\n"
-      str += "  files {\n"
-      files.each { |x| str += "    #{x}\n" } if !files.nil?
-      str += "  }\n"
-      str += "\n"
-      str += "  # All the other projects that this project depends on\n"
-      str += "  deps {\n"
-      deps.each { |x| str += "    #{x}\n" } if !deps.nil?
-      str += "  }\n"
-      str += "\n"
-      str += "  # A list of third-party libraries used by this project.\n"
-      str += "  # For a library file named 'libfoo.a' or 'libfoo.so', just write 'foo'.\n"
-      str += "  libs {\n"
-      libs.each { |x| str += "    #{x}\n" } if !libs.nil?
-      str += "  }\n"
-      str += "\n"
-      str += "  # Paths to search for included files\n"
-      str += "  inc-paths {\n"
-      inc_paths.each { |x| str += "    #{x}\n" } if !inc_paths.nil?
-      str += "  }\n"
-      str += "\n"
-      str += "  # Paths to search for third-party library files\n"
-      str += "  lib-paths {\n"
-      lib_paths.each { |x| str += "    #{x}\n" } if !lib_paths.nil?
-      str += "  }\n"
-      str += "}\n"
+      str << 'project ' + name + " {\n"
+      str << "  # The project type determines what kind of file will be created, as well as\n"
+      str << "  # its name. Given a project named 'foo', we can build one of three file types:\n"
+      str << "  # 1) An application named foo\n"
+      str << "  # 2) A static library named libfoo.a\n"
+      str << "  # 3) A shared library named libfoo.so\n"
+      str << "  type = #{type}\n"
+      str << "\n"
+      str << "  # All files in this project that should be compiled\n"
+      str << "  files {\n"
+      files.each { |x| str << "    #{x}\n" } if !files.nil?
+      str << "  }\n"
+      str << "\n"
+      str << "  # All the other projects that this project depends on\n"
+      str << "  deps {\n"
+      deps.each { |x| str << "    #{x}\n" } if !deps.nil?
+      str << "  }\n"
+      str << "\n"
+      str << "  # A list of third-party libraries used by this project.\n"
+      str << "  # For a library file named 'libfoo.a' or 'libfoo.so', just write 'foo'.\n"
+      str << "  libs {\n"
+      libs.each { |x| str << "    #{x}\n" } if !libs.nil?
+      str << "  }\n"
+      str << "\n"
+      str << "  # Paths to search for included files\n"
+      str << "  inc-paths {\n"
+      inc_paths.each { |x| str << "    #{x}\n" } if !inc_paths.nil?
+      str << "  }\n"
+      str << "\n"
+      str << "  # Paths to search for third-party library files\n"
+      str << "  lib-paths {\n"
+      lib_paths.each { |x| str << "    #{x}\n" } if !lib_paths.nil?
+      str << "  }\n"
+      str << "}\n"
       
       return str;
     end
@@ -167,93 +167,66 @@ module Bake
 
       # Parse project declaration
       parse_project_decl lines
+      raise "Unexpected end of project declaration" if lines.empty?
 
       while !lines.empty?
         # Get the next property string
-        curline = lines.shift
+        curline = lines.first
         tokens = curline.split
         property = tokens.first
 
         # Check if we're all done
         if property == '}'
-          if !lines.empty?
+          if lines.size > 1
             raise "Unexpected tokens after final '}' in project definition"
           end
           return
         end
         
-        # Check for a bad input
-        if !is_valid_property? property
-          raise "Invalid property \"#{property}\""
-        elsif property != 'type'
-          if tokens.size == 1 && lines.shift != "{"
-            raise "Expected \"{\" after property declaration \"#{property}\""
-          elsif tokens.size > 1 && !(tokens[1] == "{" || tokens[1] == "{}")
-            raise "Expected \"{\" after property declaration \"#{property}\""
-          elsif tokens.size > 2 && tokens[2] != "}"
-            raise "Expected \"}\" after property declaration \"#{property} {\""
-          elsif tokens.size > 3
-            raise "Invalid property declaration \"#{property}\""
-          end
-        end
-
-        # Check if the property is empty
-        next if tokens.size == 2 && tokens[1] == "{}"
-        next if tokens.size == 3 && tokens[1] == "{" && tokens[2] == "}"
-        
         # Parse each property
-        case property
-        when 'type'
-          parse_type curline
-        when 'files'
-          parse_files lines
-        when 'deps'
-          parse_deps lines
-        when 'libs'
-          parse_libs lines
-        when 'inc-paths'
-          parse_inc_paths lines
-        when 'lib-paths'
-          parse_lib_paths lines
-        else
-          # We should never get here, as long as is_valid_property? is correct
-          raise "Unknown project property \"#{property}\""
+        begin
+          case property
+          when 'type'
+            parse_type lines
+          when 'files'
+            Utils::parse_unnamed_block(lines, files)
+          when 'deps'
+            Utils::parse_unnamed_block(lines, deps)
+          when 'libs'
+            Utils::parse_unnamed_block(lines, libs)
+          when 'inc-paths'
+            Utils::parse_unnamed_block(lines, inc_paths)
+          when 'lib-paths'
+            Utils::parse_unnamed_block(lines, lib_paths)
+          else
+            raise "Unknown project property"
+          end
+        rescue => e
+          raise "Error parsing property '#{property}': " + e.message
         end
-      end
-    end
 
-    # Is the project property valid?
-    def is_valid_property?(property)
-      case property
-      when 'type'
-      when 'files'
-      when 'deps'
-      when 'libs'
-      when 'inc-paths'
-      when 'lib-paths'
-      else
-        return false
+        # Make sure we haven't reached a premature end of the definition
+        raise "Unexpected end of system declaration" if lines.empty?
       end
-      return true
     end
     
     # Parse a project declaration, modifying the input array
     # - Expects "project <name>" or "project <name> {"
     def parse_project_decl(lines)
       # Get the first line, which is the project definition
-      line = lines.shift
-      tokens = line.split
+      curline = lines.shift
+      tokens = curline.split
 
       # Check for errors
       if tokens.size < 2 || tokens[0] != "project"
-        raise "Missing \"project <name>\" from project definition" 
+        raise "Missing 'project <name>' from project definition" 
       end
       if tokens.size > 2 && tokens[2] != '{' || tokens.size > 3
-        raise "Invalid project declaration \"#{line}\""
+        raise "Invalid project declaration '#{curline}'"
       end
       if tokens.size == 2
         curline = lines.shift
-        raise "Expected \"{\" after project declaration" if curline != "{"
+        raise "Expected '{' after project declaration" if curline != '{'
       end
 
       # Save the project name
@@ -261,69 +234,14 @@ module Bake
     end
 
     # Parse the project specification string "type = <type>"
-    def parse_type(str)
-      tokens = str.split
+    def parse_type(lines)
+      tokens = lines.shift.split
       if tokens.size != 3 || tokens[0] != 'type' || tokens[1] != '=' || tokens[2] !~ /\w+/
-        raise "Invalid type specification \"#{str}\""
+        raise "Invalid type specification '#{str}'"
       end
       type = tokens[2]
-      raise "Invalid project type \"#{type}\"" if !ProjectType::valid? type
+      raise "Invalid project type '#{type}'" if !ProjectType::valid? type
       @type = type
-    end
-
-    def parse_files(lines)
-      while true
-        curline = lines.shift
-        if curline.nil?
-          raise "Unexpected end of project definition while parsing \"files\" property"
-        end
-        return if curline == '}'
-        @files << curline
-      end
-    end
-
-    def parse_deps(lines)
-      while true
-        curline = lines.shift
-        if curline.nil?
-          raise "Unexpected end of project definition while parsing \"deps\" property"
-        end
-        return if curline == '}'
-        @deps << curline
-      end
-    end
-    
-    def parse_libs(lines)
-      while true
-        curline = lines.shift
-        if curline.nil?
-          raise "Unexpected end of project definition while parsing \"libs\" property"
-        end
-        return if curline == '}'
-        @libs << curline
-      end
-    end
-
-    def parse_inc_paths(lines)
-      while true
-        curline = lines.shift
-        if curline.nil?
-          raise "Unexpected end of project definition while parsing \"inc-paths\" property"
-        end
-        return if curline == '}'
-        @inc_paths << curline
-      end
-    end
-
-    def parse_lib_paths(lines)
-      while true
-        curline = lines.shift
-        if curline.nil?
-          raise "Unexpected end of project definition while parsing \"lib-paths\" property"
-        end
-        return if curline == '}'
-        @lib_paths << curline
-      end
     end
   end
   

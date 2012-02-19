@@ -7,6 +7,7 @@ require 'cmdline'
 require 'compiler'
 require 'fileutils'
 require 'project'
+require 'system'
 require 'utils'
 
 module Bake
@@ -233,14 +234,13 @@ module Bake
   end
 
   #=============================================================================
-  # The 'init' command creates a bake.proj file and initializes it with the
-  # source files in the current dir. If such a file already exists, it will not
-  # be changed.
+  # The 'init' command creates bake configuration files. It will not overwrite
+  # existing files.
   #=============================================================================
   class InitCommand < Command
     # Set up the name and description, and add to the CommandRegistry
     def initialize
-      super("init", "Write a bake.proj file initialized with source files")
+      super("init", "Write a bake configuration file")
     end
     CommandRegistry.insert new
 
@@ -249,16 +249,18 @@ module Bake
       s  = "#{USAGE_HEADER}\n"
       s << "\n"
       s << "  ABOUT\n"
-      s << "    The 'init' command creates a bake.proj file and initializes it with the\n"
-      s << "    source files in the current dir. If such a file already exists, it will not\n"
-      s << "    be changed.\n"
+      s << "    The 'init' command creates bake configuration files. It will not overwrite\n"
+      s << "    existing files.\n"
       s << "\n"
       s << "  USAGE\n"
-      s << "    bake init [name] [type]\n"
+      s << "    bake init <project|system> [name] [type]\n"
       s << "\n"
       s << "  WHERE\n"
-      s << "    name  - Project name. Default: #{DEFAULT_NAME}\n"
-      s << "    type  - Project type. Default: #{DEFAULT_TYPE}\n"
+      s << "    name              Project name Default: #{DEFAULT_PROJ_NAME}\n"
+      s << "    type              Project type. Default: #{DEFAULT_PROJ_TYPE}\n"
+      s << "\n"
+      s << "  OPTIONS\n"
+      s << "    -o, --overwrite   Overwrite any existing file\n"
       s << "\n"
       return s
     end
@@ -268,6 +270,7 @@ module Bake
       # Parse command-line args
       cmdline = CommandLine.new
       cmdline.option("h,help")
+      cmdline.option("o,overwrite")
       cmdline.parse(args)
 
       # Show help?
@@ -278,28 +281,51 @@ module Bake
 
       # Get project name
       args = cmdline.params.clone
-      name = (args.empty? ? DEFAULT_NAME : args.shift)
-      type = (args.empty? ? DEFAULT_TYPE : args.shift)
+      raise "Missing <project|system> param" if args.empty?
+      init_type = args.shift
+      overwrite = cmdline.has? 'overwrite'
 
-      raise "Invalid name '#{name}'" if name !~ /^\w+$/
-      raise "Invalid type '#{type}'" if !ProjectType::valid? type
+      case init_type
+      when 'project'
+        proj_name = (args.empty? ? DEFAULT_PROJ_NAME : args.shift)
+        proj_type = (args.empty? ? DEFAULT_PROJ_TYPE : args.shift)
 
-      # Make sure no bake.proj file exists
-      if File.exists? BAKE_PROJ_FILE
-        puts BAKE_PROJ_FILE + ' already exists'
+        raise "Invalid name '#{proj_name}'" if proj_name !~ /^\w+$/
+        raise "Invalid type '#{proj_type}'" if !ProjectType::valid? proj_type
+
+        file_exists = File.exists? BAKE_PROJ_FILE
+        
+        # Make sure no bake.proj file exists
+        if file_exists && !overwrite
+          puts BAKE_PROJ_FILE + ' already exists'
+        else
+          project = Project.new
+          project.name = proj_name
+          project.type = proj_type
+          project.files = Utils::get_source_files
+          project.to_file BAKE_PROJ_FILE
+          puts BAKE_PROJ_FILE + ' file ' + (file_exists ? 'overwritten' : 'created')
+        end
+      when 'system'
+        file_exists = File.exists? BAKE_SYS_FILE
+        if file_exists && !overwrite
+          puts BAKE_SYS_FILE + ' already exists'
+        else
+          system = System.new
+          build = Build.new('all')
+          build.projects << '# List projects here'  # This is a hack!
+          system.builds['all'] = build
+          system.to_file BAKE_SYS_FILE
+          puts BAKE_SYS_FILE + ' file ' + (file_exists ? 'overwritten' : 'created')
+        end
       else
-        project = Project.new
-        project.name = name
-        project.type = type
-        project.files = Utils::get_source_files
-        project.to_file BAKE_PROJ_FILE
-        puts BAKE_PROJ_FILE + ' file created'
+        raise "Invalid init type '#{init_type}'. Expected 'project' or 'system'."
       end
     end
 
     # Defaults
-    DEFAULT_NAME = 'my_project'
-    DEFAULT_TYPE = ProjectType::APP
+    DEFAULT_PROJ_NAME = 'my_project'
+    DEFAULT_PROJ_TYPE = ProjectType::APP
   end
 
   #=============================================================================
